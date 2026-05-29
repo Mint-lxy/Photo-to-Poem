@@ -19,9 +19,11 @@ const getFontClasses = (style: string) => {
 
 export default function App() {
   const LANGUAGES = [
-    'Auto-detect',
+    '自动检测 (Auto-detect)',
+    '简体中文 (Chinese)',
+    '繁體中文 (Traditional Chinese)',
     'English',
-    '中文 (Chinese)',
+    'Italiano (Italian)',
     'Español (Spanish)',
     'Français (French)',
     '日本語 (Japanese)',
@@ -29,15 +31,16 @@ export default function App() {
   ];
 
   const POEM_STYLES = [
-    'Free Verse',
-    'Haiku',
-    'Sonnet',
-    'Limerick',
-    'Acrostic',
-    'Villanelle',
+    '现代散文诗 (Modern Prose)',
+    '古体诗 (Classical Chinese)',
+    '现代自由诗 (Free Verse)',
+    '俳句 (Haiku)',
+    '十四行诗 (Sonnet)',
+    '五行打油诗 (Limerick)',
+    '藏头诗 (Acrostic)',
   ];
 
-  const POEM_LENGTHS = ['Short', 'Medium', 'Long'];
+  const POEM_LENGTHS = ['短 (Short)', '中等 (Medium)', '长 (Long)'];
 
   const [image, setImage] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string | null>(null);
@@ -130,9 +133,9 @@ export default function App() {
       setTextPlacement(data.textPlacement || 'bottom-center');
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        console.log('Poem generation cancelled');
+        console.log('诗歌生成已取消');
       } else {
-        setError(err.message || 'An error occurred while generating the poem.');
+        setError(err.message || '生成诗歌时发生错误。');
       }
     } finally {
       setIsGenerating(false);
@@ -154,7 +157,7 @@ export default function App() {
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
-      console.error('Failed to copy text:', err);
+      console.error('复制文本失败:', err);
     }
   };
 
@@ -375,7 +378,7 @@ export default function App() {
             Photo to Poem
           </h1>
           <p className="text-lg text-neutral-500 max-w-lg mx-auto leading-relaxed">
-            Upload any photograph and let AI weave its essence into a unique piece of poetry.
+            上传一张照片，AI会根据画面意境为您生成一首优美的诗歌。
           </p>
         </header>
 
@@ -393,8 +396,8 @@ export default function App() {
                 <div className="p-4 bg-white rounded-full shadow-sm mb-4 group-hover:scale-105 transition-transform">
                   <Upload className="w-6 h-6 text-neutral-500" />
                 </div>
-                <h3 className="font-medium text-neutral-800 mb-1">Click or drag a photo</h3>
-                <p className="text-sm text-neutral-500">SVG, PNG, JPG or GIF</p>
+                <h3 className="font-medium text-neutral-800 mb-1">点击或拖拽照片到此处</h3>
+                <p className="text-sm text-neutral-500">支持 SVG, PNG, JPG 或 GIF</p>
               </div>
             ) : (
               <div className="relative w-full rounded-3xl overflow-hidden shadow-lg group">
@@ -415,7 +418,7 @@ export default function App() {
                     id="choose-different-photo-btn"
                   >
                     <RefreshCw className="w-4 h-4" />
-                    Change Photo
+                    更换照片
                   </button>
                 </div>
               </div>
@@ -432,7 +435,7 @@ export default function App() {
             {image && !poem && !isGenerating && (
               <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <label htmlFor="poem-language-select" className="text-sm font-medium text-neutral-700 ml-1">
-                  Language
+                  语言
                 </label>
                 <div className="relative mb-2">
                   <select
@@ -455,7 +458,7 @@ export default function App() {
                 </div>
 
                 <label htmlFor="poem-style-select" className="text-sm font-medium text-neutral-700 ml-1">
-                  Select Poem Style
+                  选择诗歌风格
                 </label>
                 <div className="relative">
                   <select
@@ -480,7 +483,7 @@ export default function App() {
                 <div className="mt-2">
                   <div className="flex justify-between items-center mb-2">
                     <label htmlFor="poem-length-slider" className="text-sm font-medium text-neutral-700 ml-1">
-                      Poem Length
+                      诗歌长度
                     </label>
                     <span className="text-sm font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-md">
                       {POEM_LENGTHS[poemLengthIndex]}
@@ -510,7 +513,7 @@ export default function App() {
                   className="w-full py-4 px-6 bg-neutral-900 text-white rounded-2xl font-medium shadow-xl hover:bg-neutral-800 transition-colors hover:-translate-y-0.5 mt-2"
                   id="generate-poem-btn"
                 >
-                  Inspire a Poem
+                  开始作诗
                 </button>
               </div>
             )}
@@ -522,14 +525,14 @@ export default function App() {
                   className="w-full py-4 px-6 bg-neutral-200 text-neutral-500 rounded-2xl font-medium flex items-center justify-center gap-3 cursor-not-allowed"
                 >
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Weaving words...
+                  正在字斟句酌...
                 </button>
                 <button
                   onClick={cancelGeneration}
                   className="w-full py-3 px-6 bg-white border border-neutral-200 text-neutral-600 hover:text-red-600 hover:bg-red-50 hover:border-red-100 rounded-2xl font-medium flex items-center justify-center gap-2 transition-colors shadow-sm"
                 >
                   <XCircle className="w-5 h-5" />
-                  Cancel Generation
+                  取消生成
                 </button>
               </div>
             )}
@@ -547,14 +550,14 @@ export default function App() {
               {!poem && !isGenerating && !image && (
                 <div className="flex flex-col items-center text-neutral-400">
                   <ImageIcon className="w-12 h-12 mb-4 opacity-50" strokeWidth={1} />
-                  <p>Your poem will appear here</p>
+                  <p>您的诗歌将显示在这里</p>
                 </div>
               )}
               
               {!poem && !isGenerating && image && (
                 <div className="flex flex-col items-center text-neutral-400 animate-pulse">
                   <Feather className="w-12 h-12 mb-4 opacity-50" strokeWidth={1} />
-                  <p>Ready to generate</p>
+                  <p>准备就绪</p>
                 </div>
               )}
               
@@ -564,7 +567,7 @@ export default function App() {
                     <div className="absolute inset-0 border-4 border-neutral-200 rounded-full"></div>
                     <div className="absolute inset-0 border-4 border-neutral-900 rounded-full border-t-transparent animate-spin"></div>
                   </div>
-                  <p className="animate-pulse">Analyzing image details...</p>
+                  <p className="animate-pulse">正在分析图片细节...</p>
                 </div>
               )}
 
@@ -613,7 +616,7 @@ export default function App() {
                       className="px-6 py-3 bg-white border border-neutral-200 text-neutral-800 rounded-full font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors shadow-sm"
                     >
                       {copySuccess ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                      {copySuccess ? 'Copied' : 'Copy Text'}
+                      {copySuccess ? '已复制' : '复制诗文字'}
                     </button>
                     <button
                       onClick={generateImagePreview}
@@ -621,7 +624,7 @@ export default function App() {
                       className="px-6 py-3 bg-neutral-900 text-white rounded-full font-medium flex items-center gap-2 hover:bg-neutral-800 transition-colors shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {isSavingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      Save as Image
+                      保存为图片
                     </button>
                   </motion.div>
                 </motion.div>
@@ -635,7 +638,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl overflow-hidden shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-neutral-100 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-neutral-900">Preview Output</h3>
+              <h3 className="text-xl font-bold text-neutral-900">效果预览</h3>
               <button onClick={() => setPreviewImageUrl(null)} className="text-neutral-500 hover:text-neutral-800 transition-colors">
                 <XCircle className="w-6 h-6" />
               </button>
@@ -648,14 +651,14 @@ export default function App() {
                 onClick={() => setPreviewImageUrl(null)}
                 className="px-6 py-2.5 bg-white border border-neutral-200 text-neutral-700 rounded-full font-medium hover:bg-neutral-50 transition-colors"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={confirmDownloadImage}
                 className="px-6 py-2.5 bg-neutral-900 text-white rounded-full font-medium hover:bg-neutral-800 transition-colors shadow-md flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                Download Image
+                下载图片
               </button>
             </div>
           </div>
