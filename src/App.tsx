@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, Loader2, RefreshCw, Feather, XCircle, Copy, CheckCircle2, Download } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, RefreshCw, Feather, XCircle, Copy, CheckCircle2, Download, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const getFontClasses = (style: string) => {
@@ -356,6 +356,101 @@ export default function App() {
     img.src = image;
   };
 
+  const generateTextCardPreview = () => {
+    if (!poem) return;
+    setIsSavingImage(true);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      setIsSavingImage(false);
+      return;
+    }
+
+    const canvasWidth = 1080;
+    const padding = 100;
+    const maxWidthText = canvasWidth - (padding * 2);
+
+    const titleFontSize = 64;
+    const poemFontSize = 40;
+    const lineHeight = poemFontSize * 1.8;
+
+    const getFontString = (size: number, fw: string) => {
+      switch (fontStyle) {
+        case 'modern': return `${fw} ${size}px "Inter", "Noto Sans SC", sans-serif`;
+        case 'handwritten': return `${fw} ${size}px "Caveat", "Ma Shan Zheng", cursive`;
+        case 'typewriter': return `${fw} ${size}px "Special Elite", "Noto Serif SC", monospace`;
+        case 'elegant':
+        default: return `${fw} ${size}px "Playfair Display", "Noto Serif SC", serif`;
+      }
+    };
+    
+    ctx.font = getFontString(poemFontSize, 'normal');
+
+    const lines: { text: string; isTitle: boolean }[] = [];
+    
+    if (poemTitle) {
+      ctx.font = getFontString(titleFontSize, 'bold');
+      const titleLines = getLines(ctx, poemTitle, maxWidthText);
+      titleLines.forEach(l => lines.push({ text: l, isTitle: true }));
+      lines.push({ text: '', isTitle: false });
+    }
+    
+    ctx.font = getFontString(poemFontSize, 'normal');
+    const poemLines = getLines(ctx, poem, maxWidthText);
+    poemLines.forEach(l => lines.push({ text: l, isTitle: false }));
+
+    let totalHeight = 0;
+    lines.forEach(line => {
+      totalHeight += line.isTitle ? (titleFontSize * 1.3) : lineHeight;
+    });
+
+    const canvasHeight = Math.max(1080, totalHeight + padding * 2);
+    
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // Draw background
+    ctx.fillStyle = '#FAFAFA'; 
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = '#E5E5E5';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+    ctx.fillStyle = '#171717'; 
+    ctx.textAlign = 'center';
+    
+    let currentY = padding + (lines[0]?.isTitle ? titleFontSize : poemFontSize);
+    if (canvasHeight > totalHeight + padding * 2) {
+      currentY = (canvasHeight - totalHeight) / 2 + (lines[0]?.isTitle ? titleFontSize : poemFontSize) / 2;
+    }
+
+    const textX = canvas.width / 2;
+
+    lines.forEach(line => {
+      let drawY = currentY;
+      if (line.isTitle) {
+        ctx.font = getFontString(titleFontSize, 'bold');
+        if (line.text) ctx.fillText(line.text, textX, drawY);
+        currentY += titleFontSize * 1.3;
+      } else {
+        ctx.font = getFontString(poemFontSize, 'normal');
+        if (line.text) ctx.fillText(line.text, textX, drawY);
+        currentY += lineHeight;
+      }
+    });
+
+    try {
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      setPreviewImageUrl(dataUrl);
+    } catch (err) {
+      console.error('Error saving text card:', err);
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
   const confirmDownloadImage = () => {
     if (!previewImageUrl) return;
     const a = document.createElement('a');
@@ -617,6 +712,14 @@ export default function App() {
                     >
                       {copySuccess ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                       {copySuccess ? '已复制' : '复制诗文字'}
+                    </button>
+                    <button
+                      onClick={generateTextCardPreview}
+                      disabled={isSavingImage}
+                      className="px-6 py-3 bg-white border border-neutral-200 text-neutral-800 rounded-full font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isSavingImage ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : <FileText className="w-4 h-4" />}
+                      保存文字卡片
                     </button>
                     <button
                       onClick={generateImagePreview}
