@@ -576,14 +576,11 @@ export default function App() {
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans selection:bg-neutral-200">
       <main className="max-w-4xl mx-auto px-6 py-12 md:py-20 flex flex-col items-center">
         <header className="mb-12 text-center">
-          <div className="inline-flex items-center justify-center p-3 bg-neutral-900 text-white rounded-2xl mb-6 shadow-xl">
-            <Feather className="w-8 h-8" />
-          </div>
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4 text-neutral-900">
             Photo to Poem
           </h1>
           <p className="text-lg text-neutral-500 max-w-lg mx-auto leading-relaxed">
-            上传一张照片，AI会根据画面意境为您生成一首优美的诗歌。
+            上传一张照片，AI会根据画面生成一首诗歌。
           </p>
         </header>
 
