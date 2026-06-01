@@ -17,6 +17,67 @@ const getFontClasses = (style: string) => {
   }
 };
 
+const TEXT_CARD_BACKGROUNDS = [
+  { 
+    id: 'warm-paper', 
+    name: '暖素 (Warm Paper)', 
+    css: '#FDFCF8', 
+    textColor: '#171717', 
+    borderColor: '#E5E5E5',
+    draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => { 
+      ctx.fillStyle = '#FDFCF8'; 
+      ctx.fillRect(0,0,w,h); 
+    } 
+  },
+  { 
+    id: 'pure-white', 
+    name: '纯净 (Pure White)', 
+    css: '#FAFAFA', 
+    textColor: '#171717', 
+    borderColor: '#E5E5E5',
+    draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => { 
+      ctx.fillStyle = '#FAFAFA'; 
+      ctx.fillRect(0,0,w,h); 
+    } 
+  },
+  { 
+    id: 'dawn', 
+    name: '晨曦 (Dawn)', 
+    css: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)', 
+    textColor: '#171717', 
+    borderColor: '#D1D5DB',
+    draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => { 
+      const x = ctx.createLinearGradient(0,0,w,h); 
+      x.addColorStop(0, '#fdfbfb'); x.addColorStop(1, '#ebedee'); 
+      ctx.fillStyle = x; ctx.fillRect(0,0,w,h); 
+    } 
+  },
+  { 
+    id: 'twilight', 
+    name: '青黛 (Twilight)', 
+    css: 'linear-gradient(135deg, #141e30 0%, #243b55 100%)', 
+    textColor: '#F1F5F9', 
+    borderColor: 'rgba(255,255,255,0.2)',
+    draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => { 
+      const x = ctx.createLinearGradient(0,0,w,h); 
+      x.addColorStop(0, '#141e30'); x.addColorStop(1, '#243b55'); 
+      ctx.fillStyle = x; ctx.fillRect(0,0,w,h); 
+    } 
+  },
+  { 
+    id: 'cherry', 
+    name: '樱草 (Cherry)', 
+    css: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)', 
+    textColor: '#5a3d31', 
+    borderColor: 'rgba(90,61,49,0.2)',
+    draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => { 
+      const x = ctx.createLinearGradient(0,0,w,h); 
+      x.addColorStop(0, '#ffecd2'); x.addColorStop(1, '#fcb69f'); 
+      ctx.fillStyle = x; ctx.fillRect(0,0,w,h); 
+    } 
+  },
+];
+
 export default function App() {
   const LANGUAGES = [
     '自动检测 (Auto-detect)',
@@ -52,6 +113,7 @@ export default function App() {
   const [poemLanguage, setPoemLanguage] = useState<string>(LANGUAGES[0]);
   const [fontStyle, setFontStyle] = useState<string>('elegant');
   const [textPlacement, setTextPlacement] = useState<string>('bottom-center');
+  const [cardBackgroundIdx, setCardBackgroundIdx] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -410,15 +472,16 @@ export default function App() {
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
 
+    const bgConfig = TEXT_CARD_BACKGROUNDS[cardBackgroundIdx];
+
     // Draw background
-    ctx.fillStyle = '#FAFAFA'; 
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    bgConfig.draw(ctx, canvas.width, canvas.height);
     
-    ctx.strokeStyle = '#E5E5E5';
+    ctx.strokeStyle = bgConfig.borderColor;
     ctx.lineWidth = 2;
     ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
 
-    ctx.fillStyle = '#171717'; 
+    ctx.fillStyle = bgConfig.textColor; 
     ctx.textAlign = 'center';
     
     let currentY = padding + (lines[0]?.isTitle ? titleFontSize : poemFontSize);
@@ -673,30 +736,41 @@ export default function App() {
                   transition={{ duration: 0.5 }}
                   className="w-full flex flex-col items-center"
                 >
-                  
-                  <div className={`w-full flex-col items-center mb-8 py-4 ${getFontClasses(fontStyle)}`}>
-                    {poemTitle && (
-                      <motion.h2 
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                        className="text-3xl md:text-3xl lg:text-4xl font-bold text-neutral-900 mb-8 text-center leading-tight"
-                      >
-                        {poemTitle}
-                      </motion.h2>
-                    )}
-                    <div className="text-lg md:text-xl text-neutral-800 leading-relaxed md:leading-[1.8] text-center">
-                      {poem.split('\n').map((line, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 20 }}
+                  <div 
+                    className="w-full rounded-2xl p-10 mb-8 shadow-sm transition-all duration-500 relative"
+                    style={{ 
+                      background: TEXT_CARD_BACKGROUNDS[cardBackgroundIdx].css,
+                      color: TEXT_CARD_BACKGROUNDS[cardBackgroundIdx].textColor,
+                    }}
+                  >
+                    <div 
+                      className="absolute inset-[16px] pointer-events-none border-2"
+                      style={{ borderColor: TEXT_CARD_BACKGROUNDS[cardBackgroundIdx].borderColor }}
+                    />
+                    <div className={`relative z-10 w-full flex-col items-center ${getFontClasses(fontStyle)}`}>
+                      {poemTitle && (
+                        <motion.h2 
+                          initial={{ opacity: 0, y: 30 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.8, delay: 0.4 + i * 0.1, ease: "easeOut" }}
-                          className={line.trim() === '' ? 'h-6' : ''}
+                          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                          className="text-3xl md:text-3xl lg:text-4xl font-bold mb-8 text-center leading-tight"
                         >
-                          {line}
-                        </motion.div>
-                      ))}
+                          {poemTitle}
+                        </motion.h2>
+                      )}
+                      <div className="text-lg md:text-xl leading-relaxed md:leading-[1.8] text-center">
+                        {poem.split('\n').map((line, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, delay: 0.4 + i * 0.1, ease: "easeOut" }}
+                            className={line.trim() === '' ? 'h-6' : ''}
+                          >
+                            {line}
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -704,31 +778,51 @@ export default function App() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.8 + (poem.split('\n').length * 0.05), ease: "easeOut" }}
-                    className="flex flex-wrap justify-center gap-4 w-full mt-2 pt-8 border-t border-neutral-100"
+                    className="w-full"
                   >
-                    <button
-                      onClick={copyToClipboard}
-                      className="px-6 py-3 bg-white border border-neutral-200 text-neutral-800 rounded-full font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors shadow-sm"
-                    >
-                      {copySuccess ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                      {copySuccess ? '已复制' : '复制诗文字'}
-                    </button>
-                    <button
-                      onClick={generateTextCardPreview}
-                      disabled={isSavingImage}
-                      className="px-6 py-3 bg-white border border-neutral-200 text-neutral-800 rounded-full font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isSavingImage ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : <FileText className="w-4 h-4" />}
-                      保存文字卡片
-                    </button>
-                    <button
-                      onClick={generateImagePreview}
-                      disabled={isSavingImage}
-                      className="px-6 py-3 bg-neutral-900 text-white rounded-full font-medium flex items-center gap-2 hover:bg-neutral-800 transition-colors shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isSavingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                      保存为图片
-                    </button>
+                    <div className="mb-6">
+                      <label className="text-sm font-medium text-neutral-700 ml-1 mb-3 block text-center">
+                        选择卡片背景
+                      </label>
+                      <div className="flex justify-center gap-3">
+                        {TEXT_CARD_BACKGROUNDS.map((bg, idx) => (
+                          <button
+                            key={bg.id}
+                            type="button"
+                            onClick={() => setCardBackgroundIdx(idx)}
+                            className={`w-10 h-10 rounded-full border-2 transition-all ${cardBackgroundIdx === idx ? 'border-neutral-800 scale-110 shadow-md ring-2 ring-neutral-200 ring-offset-2' : 'border-neutral-200 hover:border-neutral-400'}`}
+                            style={{ background: bg.css }}
+                            title={bg.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap justify-center gap-4 w-full pt-6 border-t border-neutral-100">
+                      <button
+                        onClick={copyToClipboard}
+                        className="px-6 py-3 bg-white border border-neutral-200 text-neutral-800 rounded-full font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors shadow-sm"
+                      >
+                        {copySuccess ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                        {copySuccess ? '已复制' : '复制诗文字'}
+                      </button>
+                      <button
+                        onClick={generateTextCardPreview}
+                        disabled={isSavingImage}
+                        className="px-6 py-3 bg-white border border-neutral-200 text-neutral-800 rounded-full font-medium flex items-center gap-2 hover:bg-neutral-50 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        {isSavingImage ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : <FileText className="w-4 h-4" />}
+                        保存文字卡片
+                      </button>
+                      <button
+                        onClick={generateImagePreview}
+                        disabled={isSavingImage}
+                        className="px-6 py-3 bg-neutral-900 text-white rounded-full font-medium flex items-center gap-2 hover:bg-neutral-800 transition-colors shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
+                      >
+                        {isSavingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        保存为图片
+                      </button>
+                    </div>
                   </motion.div>
                 </motion.div>
               )}
