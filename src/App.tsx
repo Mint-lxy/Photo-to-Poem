@@ -7,14 +7,34 @@ import React, { useState, useRef } from 'react';
 import { Upload, Image as ImageIcon, Loader2, RefreshCw, Feather, XCircle, Copy, CheckCircle2, Download, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const getFontClasses = (style: string) => {
-  switch (style) {
-    case 'modern': return 'font-modern';
-    case 'handwritten': return 'font-handwritten';
-    case 'typewriter': return 'font-typewriter';
-    case 'elegant':
-    default: return 'font-elegant';
+const detectScript = (text: string) => {
+  if (/[\u3040-\u30ff\u31f0-\u31ff]/.test(text)) return 'ja'; // Hiragana/Katakana
+  if (/[\uac00-\ud7af\u1100-\u11ff]/.test(text)) return 'ko'; // Hangul
+  if (/[\u4e00-\u9fff]/.test(text)) return 'zh'; // CJK
+  return 'en';
+};
+
+const getFontFamily = (style: string, text: string = '') => {
+  const script = text ? detectScript(text) : 'en';
+
+  if (style === 'handwritten') {
+    if (script === 'zh') return '"Zhi Mang Xing", "Ma Shan Zheng", cursive';
+    if (script === 'ja') return '"Yuji Syuku", cursive';
+    if (script === 'ko') return '"East Sea Dokdo", cursive';
+    return '"Dancing Script", "Caveat", cursive';
   }
+  if (style === 'modern') {
+    return 'ui-sans-serif, system-ui, sans-serif'; 
+  }
+  if (style === 'typewriter') {
+    return '"Special Elite", "Noto Serif SC", monospace';
+  }
+  
+  // elegant / default
+  if (script === 'zh') return '"Noto Serif SC", serif';
+  if (script === 'ja') return '"Shippori Mincho", "Noto Serif JP", serif';
+  if (script === 'ko') return '"Noto Serif KR", serif';
+  return '"Cormorant Garamond", "Playfair Display", serif';
 };
 
 const TEXT_CARD_BACKGROUNDS = [
@@ -144,7 +164,6 @@ export default function App() {
   const processFile = (file: File) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64String = (reader.result as string).split(',')[1];
       setImage(reader.result as string);
       setMimeType(file.type);
       setPoem(null);
@@ -155,6 +174,38 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  const compressImageForAPI = async (dataUrl: string, maxDim: number = 800): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width <= maxDim && height <= maxDim) {
+          resolve(dataUrl.split(',')[1]);
+          return;
+        }
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+        } else {
+          resolve(dataUrl.split(',')[1]);
+        }
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const generatePoem = async () => {
     if (!image || !mimeType) return;
 
@@ -163,8 +214,8 @@ export default function App() {
     setIsGenerating(true);
     setError(null);
     
-    // Extract base64 without the data URI prefix
-    const base64Data = image.split(',')[1];
+    // Compress the image before uploading to Gemini API to speed up processing
+    const base64Data = await compressImageForAPI(image, 800);
 
     try {
       const response = await fetch('/api/generate-poem', {
@@ -174,7 +225,7 @@ export default function App() {
         },
         body: JSON.stringify({
           imageBase64: base64Data,
-          mimeType,
+          mimeType: 'image/jpeg',
           poemStyle,
           poemLength: POEM_LENGTHS[poemLengthIndex],
           poemLanguage,
@@ -310,13 +361,7 @@ export default function App() {
       const lineHeight = poemFontSize * 1.6;
 
       const getFontString = (size: number, fw: string) => {
-        switch (fontStyle) {
-          case 'modern': return `${fw} ${size}px "Inter", "Noto Sans SC", sans-serif`;
-          case 'handwritten': return `${fw} ${size}px "Caveat", "Ma Shan Zheng", cursive`;
-          case 'typewriter': return `${fw} ${size}px "Special Elite", "Noto Serif SC", monospace`;
-          case 'elegant':
-          default: return `${fw} ${size}px "Playfair Display", "Noto Serif SC", serif`;
-        }
+        return `${fw} ${size}px ${getFontFamily(fontStyle, poemTitle || poem || '')}`;
       };
       
       const lines: { text: string; isTitle: boolean }[] = [];
@@ -429,45 +474,47 @@ export default function App() {
       return;
     }
 
-    const canvasWidth = 1080;
     const padding = 100;
-    const maxWidthText = canvasWidth - (padding * 2);
+    const maxAllowedWidth = 1080;
+    const maxWidthText = maxAllowedWidth - (padding * 2);
 
     const titleFontSize = 64;
     const poemFontSize = 40;
     const lineHeight = poemFontSize * 1.8;
 
     const getFontString = (size: number, fw: string) => {
-      switch (fontStyle) {
-        case 'modern': return `${fw} ${size}px "Inter", "Noto Sans SC", sans-serif`;
-        case 'handwritten': return `${fw} ${size}px "Caveat", "Ma Shan Zheng", cursive`;
-        case 'typewriter': return `${fw} ${size}px "Special Elite", "Noto Serif SC", monospace`;
-        case 'elegant':
-        default: return `${fw} ${size}px "Playfair Display", "Noto Serif SC", serif`;
-      }
+      return `${fw} ${size}px ${getFontFamily(fontStyle, poemTitle || poem || '')}`;
     };
     
-    ctx.font = getFontString(poemFontSize, 'normal');
-
     const lines: { text: string; isTitle: boolean }[] = [];
+    let actualMaxWidth = 0;
     
     if (poemTitle) {
       ctx.font = getFontString(titleFontSize, 'bold');
       const titleLines = getLines(ctx, poemTitle, maxWidthText);
-      titleLines.forEach(l => lines.push({ text: l, isTitle: true }));
+      titleLines.forEach(l => {
+        actualMaxWidth = Math.max(actualMaxWidth, ctx.measureText(l).width);
+        lines.push({ text: l, isTitle: true });
+      });
       lines.push({ text: '', isTitle: false });
     }
     
     ctx.font = getFontString(poemFontSize, 'normal');
     const poemLines = getLines(ctx, poem, maxWidthText);
-    poemLines.forEach(l => lines.push({ text: l, isTitle: false }));
+    poemLines.forEach(l => {
+      actualMaxWidth = Math.max(actualMaxWidth, ctx.measureText(l).width);
+      lines.push({ text: l, isTitle: false });
+    });
 
     let totalHeight = 0;
     lines.forEach(line => {
       totalHeight += line.isTitle ? (titleFontSize * 1.3) : lineHeight;
     });
 
-    const canvasHeight = Math.max(1080, totalHeight + padding * 2);
+    // Make canvas width fit the text snugly, keeping styling padding
+    const canvasWidth = Math.max(600, Math.min(1080, actualMaxWidth + padding * 2 + 80));
+    // Let the canvas height match the content, without a giant 1080px minimum baseline
+    const canvasHeight = Math.max(600, totalHeight + padding * 2);
     
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -747,7 +794,10 @@ export default function App() {
                       className="absolute inset-[16px] pointer-events-none border-2"
                       style={{ borderColor: TEXT_CARD_BACKGROUNDS[cardBackgroundIdx].borderColor }}
                     />
-                    <div className={`relative z-10 w-full flex-col items-center ${getFontClasses(fontStyle)}`}>
+                    <div 
+                      className="relative z-10 w-full flex-col items-center"
+                      style={{ fontFamily: getFontFamily(fontStyle, poemTitle || poem || '') }}
+                    >
                       {poemTitle && (
                         <motion.h2 
                           initial={{ opacity: 0, y: 30 }}
